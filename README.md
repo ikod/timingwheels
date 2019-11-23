@@ -67,10 +67,12 @@ Here is complete example with comments
     auto rnd = Random(142);
     SysTime last = Clock.currTime;
 
+    // convert duration to ticks
     auto durationToTicks(Duration d)
     {
         return d/Tick;
     }
+    // timer event processing
     void process_timer(Timer t)
     {
         switch(t._name)
@@ -86,24 +88,35 @@ Here is complete example with comments
                 break;
         }
     }
+    // create timers
     auto periodic_timer = new Timer("periodic");
     auto some_timer = new Timer("some");
 
     w.init();
+    // schedule periodic timer for 50.msecs
     w.schedule(periodic_timer, durationToTicks(50.msecs));
+    // schedule other timer
     w.schedule(some_timer, durationToTicks(32.msecs));
 
-    while(counter < 10)
+    while(counter < 10) // done after 10 iterations
     {
+        // randomIoInterval to emulate IO event which can arrive at any time
         auto randomIoInterval = uniform(0, IOWakeUpInterval, rnd);
+        // calculate time to next timer event
         auto nextTimerEvent = max(w.timeUntilNextEvent(Tick), 0.msecs);
         // wait for what should happen earlier
         auto time_to_sleep = min(randomIoInterval.msecs, nextTimerEvent);
         writefln("* sleep until timer event or random I/O for %s", time_to_sleep);
+
         Thread.sleep(time_to_sleep);
+
+        // if we have some timers to execute then timeUntilNextEvent
+        // will be less or equal to zero.
         while(w.timeUntilNextEvent(Tick) <= 0.msecs)
         {
+            // how much we have to advance?
             auto ticks = w.ticksUntilNextEvent();
+            // receive all expired timers
             auto wr = w.advance(ticks);
             foreach(t; wr.timers)
             {
