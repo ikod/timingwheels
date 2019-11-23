@@ -1,0 +1,29 @@
+{
+	"authors": [
+		"Igor Khasilev"
+	],
+	"targetType": "library",
+	"copyright": "Copyright © 2019, Igor Khasilev",
+	"description": "Hierarchical Timing Wheels",
+	"license": "BSL-1.0",
+	"name": "timingwheels",
+	"dependencies": {
+		"ikod-containers": "~>0",
+		"automem": "~>0"
+	},
+	"configurations": [
+		{
+			"name": "unittest",
+			"targetType": "executable",
+			"preBuildCommands": ["$DUB run --compiler=$$DC unit-threaded -c gen_ut_main -- -f bin/ut.d"],
+			"mainSourceFile": "bin/ut.d",
+			"excludedSourceFiles": ["source/app.d"],
+			"dependencies": {
+				"unit-threaded": "*"
+			},
+			"dflags": ["-dip1008"],
+			"versions": ["twtesting"],
+			"debugVersions": ["timingwheels"]
+		}
+	]
+}

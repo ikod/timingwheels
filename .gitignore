@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/timerwheels
+timerwheels.so
+timerwheels.dylib
+timerwheels.dll
+timerwheels.a
+timerwheels.lib
+timerwheels-test-*
+*.exe
+*.o
+*.obj
+*.lst
