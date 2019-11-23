@@ -1,4 +1,4 @@
-![](https://github.com/actions/ikod/workflows/main/badge.svg)
+![](https://github.com/ikod/timingwheels/workflows/CI/badge.svg)
 
 Timing Wheels Implementation
 
