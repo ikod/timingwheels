@@ -1,3 +1,5 @@
+![](https://github.com/actions/ikod/workflows/main/badge.svg)
+
 Timing Wheels Implementation
 
 Timing wheels is data structure to store and retrieve huge number of timers with O(1) complexity (at the cost of grouping them).
