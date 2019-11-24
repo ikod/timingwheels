@@ -27,7 +27,7 @@ version(twtesting)
 
 version(twtesting)
 {
-    class Timer
+    private class Timer
     {
         static ulong _current_id;
         private
@@ -121,14 +121,12 @@ private void dl_insertFront(L)(L *le, L** head)
         curr_head.prev = le;
     }
     *head = le;
-    debug(timingwheels) safe_tracef("insert - head: %x, le: %s[%x,%x]", *head, le, le.prev, le.next);
 }
 
 pragma(inline)
 private void dl_unlink(L)(L *le, L** head)
 in(*head != null)
 {
-    debug(timingwheels) safe_tracef("unlink enter - head: %x, le: %s[%x,%x]", *head, le, le.prev, le.next);
     if (le.next == le && *head == le)
     {
         *head = null;
@@ -151,7 +149,6 @@ private void dl_walk(L)(L** head)
     auto le = *head;
     do
     {
-        debug(timingwheels) safe_tracef("visiting @%x-%s", le, *le);
         le = le.next;
     } while (le != *head);
 }
@@ -359,10 +356,6 @@ struct TimingWheels(T)
             freeListLen++;
         }
     }
-    void init()
-    {
-        advancedAt = Clock.currStdTime;
-    }
     ///
     /// Schedule timer to future
     ///Params: 
@@ -385,6 +378,10 @@ struct TimingWheels(T)
         if (ptrs.contains(timer_id))
         {
             throw new ScheduleTimerError("Timer already scheduled");
+        }
+        if (advancedAt == 0)
+        {
+            advancedAt = Clock.currStdTime;
         }
         auto level_index = t2l(ticks);
         auto level = &levels[level_index];
@@ -456,7 +453,7 @@ struct TimingWheels(T)
     ///Returns: msecs until next event. Can be zero or negative in case you have already expired events.
     ///
     Duration timeUntilNextEvent(const Duration tick)
-    in(advancedAt>0, "Did you forget to call init()?")
+    in(advancedAt>0)
     {
         immutable n = ticksUntilNextEvent();
         immutable target = advancedAt + n * tick.split!"hnsecs".hnsecs;
@@ -709,7 +706,6 @@ unittest
     // each tick span 5 msecs - this is our link with time in reality
     enum Tick = 5.msecs;
     TimingWheels!Timer w;
-    w.init();
 
     auto durationToTicks(Duration d)
     {
