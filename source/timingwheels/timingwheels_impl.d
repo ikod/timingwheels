@@ -1,3 +1,4 @@
+///
 module timingwheels.timingwheels_impl;
 
 import std.datetime;
@@ -53,7 +54,8 @@ version(unittest)
     }
 }
 ///
-/// scheduling error
+/// scheduling error occurs at schedule() when ticks == 0 or timer already scheduled.
+///
 ///
 class ScheduleTimerError: Exception
 {
@@ -64,7 +66,7 @@ class ScheduleTimerError: Exception
     }
 }
 ///
-/// Cancel timer error
+/// Cancel timer error occurs if you try to cancel timer which is not scheduled.
 ///
 class CancelTimerError: Exception
 {
@@ -75,7 +77,7 @@ class CancelTimerError: Exception
     }
 }
 ///
-/// Advancing error
+/// Advancing error occurs if number of ticks for advance not in range 0<t<=256
 ///
 class AdvanceWheelError: Exception
 {
@@ -202,8 +204,14 @@ unittest
     assert(head2 != null);
 }
 ///
-///
-///
+/// This structure implements scheme 6.2 thom the
+/// http://www.cs.columbia.edu/~nahum/w6998/papers/sosp87-timing-wheels.pdf 
+/// It supports several primitives:
+/// 1. schedule timer in the future.
+/// 2. cancel timer.
+/// 3. time step (advance) - all timers expired at current time tick are extracted from wheels.
+/// Each operation take O(1) time.
+/// 
 struct TimingWheels(T)
 {
     import core.bitop: bsr;
@@ -358,14 +366,15 @@ struct TimingWheels(T)
     ///
     /// Schedule timer to future
     ///Params: 
-    /// timer - timer to schedule;
-    /// ticks - ticks in the future to schedule timer. (must be > 0);
+    /// timer = timer to schedule;
+    /// ticks = ticks in the future to schedule timer. (0 < ticks < ulong.max);
     ///Returns:
     ///  void
     ///Throws: 
     /// ScheduleTimerError
     ///   when thicks == 0
-    ///   when timer already in wheel
+    ///   or when timer already scheduled
+    ///
     void schedule(T)(T timer, const ulong ticks)
     {
         if (ticks == 0)
@@ -392,7 +401,7 @@ struct TimingWheels(T)
     }
     /// Cancel timer
     ///Params: 
-    /// timer to cancel
+    /// timer = timer to cancel
     ///Returns: 
     /// void
     ///Throws: 
@@ -416,7 +425,10 @@ struct TimingWheels(T)
         ptrs.remove(timer.id());
     }
     ///
-    ///
+    /// count "empty" ticks - slots without events.
+    /// If you have empty ticks it is safe to sleep - you will not miss anything, just wake up
+    /// at the time when next timer have to be processed.
+    ///Returns: number of empty ticks.
     ///
     int ticksUntilNextEvent()
     out(r; r<=256)
@@ -438,8 +450,10 @@ struct TimingWheels(T)
         while(slot != now);
         return result;
     }
-    ///
-    ///Returns: msecs until next event
+    /// Time until next scheduled timer event.
+    ///Params: 
+    /// tick = your accepted tick duration. 
+    ///Returns: msecs until next event. Can be zero or negative in case you have already expired events.
     ///
     Duration timeUntilNextEvent(const Duration tick)
     in(advancedAt>0, "Did you forget to call init()?")
@@ -449,9 +463,11 @@ struct TimingWheels(T)
         auto delta =  (target - Clock.currStdTime).hnsecs;
         return delta;
     }
-    /// 
+    ///
+    /// Adnvance wheel and return all timers expired during wheel turn.
+    //
     /// Params:
-    ///   ticks = how many ticks to advance
+    ///   ticks = how many ticks to advance. Must be in range 0 <= 256
     /// Returns: list of expired timers
     ///
     auto advance(this W)(ulong ticks)
@@ -664,6 +680,13 @@ unittest
 {
     import std;
     globalLogLevel = LogLevel.info;
+    auto rnd = Random(142);
+
+    /// track execution
+    int  counter;
+    SysTime last = Clock.currTime;
+
+    /// this is our Timer
     class Timer
     {
         static ulong __id;
@@ -674,21 +697,19 @@ unittest
             _id = __id++;
             _name = name;
         }
+        /// must provide id() method
         ulong id()
         {
             return _id;
         }
     }
-    //
-    // start some arbitrary timer and timer which rearm itself for every 50ms
-    //
-    TimingWheels!Timer w;
-    // each tick span 5 msecs
+
+    enum IOWakeUpInterval = 100; // to simulate random IO wakeups in interval 0 - 100.msecs
+
+    // each tick span 5 msecs - this is our link with time in reality
     enum Tick = 5.msecs;
-    enum IOWakeUpInterval = 100; // msecs
-    int  counter;
-    auto rnd = Random(142);
-    SysTime last = Clock.currTime;
+    TimingWheels!Timer w;
+    w.init();
 
     auto durationToTicks(Duration d)
     {
@@ -702,28 +723,32 @@ unittest
                 writefln("@ %s - delta: %sms (should be 50ms)", t._name, (Clock.currTime - last).split!"msecs".msecs);
                 last = Clock.currTime;
                 counter++;
-                w.schedule(t, durationToTicks(50.msecs));
+                w.schedule(t, durationToTicks(50.msecs)); // rearm
                 break;
             default:
                 writefln("@ %s", t._name);
                 break;
         }
     }
-    auto periodic_timer = new Timer("periodic");
-    auto some_timer = new Timer("some");
 
-    w.init();
-    w.schedule(periodic_timer, durationToTicks(50.msecs));
+    //
+    // start one arbitrary timer and one periodic timer
+    //
+    auto some_timer = new Timer("some");
+    auto periodic_timer = new Timer("periodic");
     w.schedule(some_timer, durationToTicks(32.msecs));
+    w.schedule(periodic_timer, durationToTicks(50.msecs));
 
     while(counter < 10)
     {
-        auto randomIoInterval = uniform(0, IOWakeUpInterval, rnd);
+        auto randomIoInterval = uniform(0, IOWakeUpInterval, rnd).msecs;
         auto nextTimerEvent = max(w.timeUntilNextEvent(Tick), 0.msecs);
         // wait for what should happen earlier
-        auto time_to_sleep = min(randomIoInterval.msecs, nextTimerEvent);
+        auto time_to_sleep = min(randomIoInterval, nextTimerEvent);
         writefln("* sleep until timer event or random I/O for %s", time_to_sleep);
         Thread.sleep(time_to_sleep);
+        // if we waked up early by the IO event then timeUntilNextEvent will be positive
+        // otherwise it will be <= 0 and we have something to process.
         while(w.timeUntilNextEvent(Tick) <= 0.msecs)
         {
             auto ticks = w.ticksUntilNextEvent();

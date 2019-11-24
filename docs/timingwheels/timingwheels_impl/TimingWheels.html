@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Struct TimingWheels</title>
+		<link rel="stylesheet" type="text/css" href="../../styles/ddox.css"/>
+		<link rel="stylesheet" href="../../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../../scripts/jquery.js">/**/</script><script type="text/javascript" src="../../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">timingwheels
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module selected">
+						<a href="../../timingwheels/timingwheels_impl.html">timingwheels_impl</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Struct TimingWheels</h1><p>This structure implements scheme 6.2 thom the
+</p>
+			<div class="prototype">
+				<code class="lang-d">
+					<div class="single-prototype">
+			<span class="kwd">struct</span> <span class="typ">TimingWheels</span>(T)
+			<span class="pun">;</span>
+					</div>
+				</code>
+			</div>
+			
+			<section><h2>Methods</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../timingwheels/timingwheels_impl/TimingWheels.advance.html" class="public">
+								<code>advance</code>
+							</a>
+						</td>
+						<td>Adnvance wheel and return all timers expired during wheel turn.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../timingwheels/timingwheels_impl/TimingWheels.cancel.html" class="public">
+								<code>cancel</code>
+							</a>
+						</td>
+						<td>Cancel timer
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../timingwheels/timingwheels_impl/TimingWheels.schedule.html" class="public">
+								<code>schedule</code>
+							</a>
+						</td>
+						<td>Schedule timer to future
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../timingwheels/timingwheels_impl/TimingWheels.ticksUntilNextEvent.html" class="public">
+								<code>ticksUntilNextEvent</code>
+							</a>
+						</td>
+						<td>count "empty" ticks - slots without events.
+If you have empty ticks it is safe to sleep - you will not miss anything, just wake up
+at the time when next timer have to be processed.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../timingwheels/timingwheels_impl/TimingWheels.timeUntilNextEvent.html" class="public">
+								<code>timeUntilNextEvent</code>
+							</a>
+						</td>
+						<td>Time until next scheduled timer event.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>http</h2>
+<p>//www.cs.columbia.edu/~nahum/w6998/papers/sosp87-timing-wheels.pdf
+It supports several primitives:
+1. schedule timer in the future.
+2. cancel timer.
+3. time step (advance) - all timers expired at current time tick are extracted from wheels.
+Each operation take O(1) time.
+</p>
+</section>
+<section><h2>Example</h2>
+
+<pre class="code"><code class="lang-d"><span class="kwd">import </span><span class="pln">std</span><span class="pun">;
+</span><span class="pln">globalLogLevel </span><span class="pun">= </span><span class="typ">LogLevel<wbr/></span><span class="pun">.</span><span class="pln">info</span><span class="pun">;
+</span><span class="kwd">auto </span><span class="pln">rnd </span><span class="pun">= </span><span class="typ">Random</span><span class="pun">(</span><span class="lit">142</span><span class="pun">);
+
+</span><span class="com">/// track execution
+</span><span class="typ">int  </span><span class="pln">counter</span><span class="pun">;
+</span><span class="typ">SysTime </span><span class="pln">last </span><span class="pun">= </span><span class="typ">Clock<wbr/></span><span class="pun">.</span><span class="pln">currTime</span><span class="pun">;
+
+</span><span class="com">/// this is our Timer
+</span><span class="kwd">class </span><span class="typ">Timer
+</span><span class="pun">{
+    </span><span class="kwd">static </span><span class="typ">ulong </span><span class="pln">__id</span><span class="pun">;
+    </span><span class="kwd">private </span><span class="typ">ulong </span><span class="pln">_id</span><span class="pun">;
+    </span><span class="kwd">private </span><span class="typ">string </span><span class="pln">_name</span><span class="pun">;
+    </span><span class="kwd">this</span><span class="pun">(</span><span class="typ">string </span><span class="pln">name</span><span class="pun">)
+    {
+        </span><span class="pln">_id </span><span class="pun">= </span><span class="pln">__id</span><span class="pun">++;
+        </span><span class="pln">_name </span><span class="pun">= </span><span class="pln">name</span><span class="pun">;
+    }
+    </span><span class="com">/// must provide id() method
+    </span><span class="typ">ulong </span><span class="pln">id</span><span class="pun">()
+    {
+        </span><span class="kwd">return </span><span class="pln">_id</span><span class="pun">;
+    }
+}
+
+</span><span class="kwd">enum </span><span class="typ">IOWakeUpInterval </span><span class="pun">= </span><span class="lit">100</span><span class="pun">; </span><span class="com">// to simulate random IO wakeups in interval 0 - 100.msecs
+
+// each tick span 5 msecs - this is our link with time in reality
+</span><span class="kwd">enum </span><span class="typ">Tick </span><span class="pun">= </span><span class="lit">5<wbr/></span><span class="pun">.</span><span class="pln">msecs</span><span class="pun">;
+</span><span class="typ">TimingWheels</span><span class="pun">!</span><span class="typ">Timer </span><span class="pln">w</span><span class="pun">;
+</span><span class="pln">w<wbr/></span><span class="pun">.</span><span class="pln">init</span><span class="pun">();
+
+</span><span class="kwd">auto </span><span class="pln">durationToTicks</span><span class="pun">(</span><span class="typ">Duration </span><span class="pln">d</span><span class="pun">)
+{
+    </span><span class="kwd">return </span><span class="pln">d</span><span class="pun">/</span><span class="typ">Tick</span><span class="pun">;
+}
+</span><span class="typ">void </span><span class="pln">process_timer</span><span class="pun">(</span><span class="typ">Timer </span><span class="pln">t</span><span class="pun">)
+{
+    </span><span class="kwd">switch</span><span class="pun">(</span><span class="pln">t<wbr/></span><span class="pun">.</span><span class="pln">_name</span><span class="pun">)
+    {
+        </span><span class="kwd">case </span><span class="str">"periodic"</span><span class="pun">:
+            </span><span class="pln">writefln</span><span class="pun">(</span><span class="str">"@ %s - delta: %sms (should be 50ms)"</span><span class="pun">, </span><span class="pln">t<wbr/></span><span class="pun">.</span><span class="pln">_name</span><span class="pun">, (</span><span class="typ">Clock<wbr/></span><span class="pun">.</span><span class="pln">currTime </span><span class="pun">- </span><span class="pln">last</span><span class="pun">)<wbr/>.</span><span class="pln">split</span><span class="pun">!</span><span class="str">"msecs"<wbr/></span><span class="pun">.</span><span class="pln">msecs</span><span class="pun">);
+            </span><span class="pln">last </span><span class="pun">= </span><span class="typ">Clock<wbr/></span><span class="pun">.</span><span class="pln">currTime</span><span class="pun">;
+            </span><span class="pln">counter</span><span class="pun">++;
+            </span><span class="pln">w<wbr/></span><span class="pun">.</span><span class="pln">schedule</span><span class="pun">(</span><span class="pln">t</span><span class="pun">, </span><span class="pln">durationToTicks</span><span class="pun">(</span><span class="lit">50<wbr/></span><span class="pun">.</span><span class="pln">msecs</span><span class="pun">)); </span><span class="com">// rearm
+            </span><span class="kwd">break</span><span class="pun">;
+        </span><span class="kwd">default</span><span class="pun">:
+            </span><span class="pln">writefln</span><span class="pun">(</span><span class="str">"@ %s"</span><span class="pun">, </span><span class="pln">t<wbr/></span><span class="pun">.</span><span class="pln">_name</span><span class="pun">);
+            </span><span class="kwd">break</span><span class="pun">;
+    }
+}
+
+</span><span class="com">//
+// start one arbitrary timer and one periodic timer
+//
+</span><span class="kwd">auto </span><span class="pln">some_timer </span><span class="pun">= </span><span class="kwd">new </span><span class="typ">Timer</span><span class="pun">(</span><span class="str">"some"</span><span class="pun">);
+</span><span class="kwd">auto </span><span class="pln">periodic_timer </span><span class="pun">= </span><span class="kwd">new </span><span class="typ">Timer</span><span class="pun">(</span><span class="str">"periodic"</span><span class="pun">);
+</span><span class="pln">w<wbr/></span><span class="pun">.</span><span class="pln">schedule</span><span class="pun">(</span><span class="pln">some_timer</span><span class="pun">, </span><span class="pln">durationToTicks</span><span class="pun">(</span><span class="lit">32<wbr/></span><span class="pun">.</span><span class="pln">msecs</span><span class="pun">));
+</span><span class="pln">w<wbr/></span><span class="pun">.</span><span class="pln">schedule</span><span class="pun">(</span><span class="pln">periodic_timer</span><span class="pun">, </span><span class="pln">durationToTicks</span><span class="pun">(</span><span class="lit">50<wbr/></span><span class="pun">.</span><span class="pln">msecs</span><span class="pun">));
+
+</span><span class="kwd">while</span><span class="pun">(</span><span class="pln">counter </span><span class="pun">&lt; </span><span class="lit">10</span><span class="pun">)
+{
+    </span><span class="kwd">auto </span><span class="pln">randomIoInterval </span><span class="pun">= </span><span class="pln">uniform</span><span class="pun">(</span><span class="lit">0</span><span class="pun">, </span><span class="typ">IOWakeUpInterval</span><span class="pun">, </span><span class="pln">rnd</span><span class="pun">)<wbr/>.</span><span class="pln">msecs</span><span class="pun">;
+    </span><span class="kwd">auto </span><span class="pln">nextTimerEvent </span><span class="pun">= </span><span class="pln">max</span><span class="pun">(</span><span class="pln">w<wbr/></span><span class="pun">.</span><span class="pln">timeUntilNextEvent</span><span class="pun">(</span><span class="typ">Tick</span><span class="pun">), </span><span class="lit">0<wbr/></span><span class="pun">.</span><span class="pln">msecs</span><span class="pun">);
+    </span><span class="com">// wait for what should happen earlier
+    </span><span class="kwd">auto </span><span class="pln">time_to_sleep </span><span class="pun">= </span><span class="pln">min</span><span class="pun">(</span><span class="pln">randomIoInterval</span><span class="pun">, </span><span class="pln">nextTimerEvent</span><span class="pun">);
+    </span><span class="pln">writefln</span><span class="pun">(</span><span class="str">"* sleep until timer event or random I/O for %s"</span><span class="pun">, </span><span class="pln">time_to_sleep</span><span class="pun">);
+    </span><span class="typ">Thread<wbr/></span><span class="pun">.</span><span class="pln">sleep</span><span class="pun">(</span><span class="pln">time_to_sleep</span><span class="pun">);
+    </span><span class="com">// if we waked up early by the IO event then timeUntilNextEvent will be positive
+    // otherwise it will be &lt;= 0 and we have something to process.
+    </span><span class="kwd">while</span><span class="pun">(</span><span class="pln">w<wbr/></span><span class="pun">.</span><span class="pln">timeUntilNextEvent</span><span class="pun">(</span><span class="typ">Tick</span><span class="pun">) &lt;= </span><span class="lit">0<wbr/></span><span class="pun">.</span><span class="pln">msecs</span><span class="pun">)
+    {
+        </span><span class="kwd">auto </span><span class="pln">ticks </span><span class="pun">= </span><span class="pln">w<wbr/></span><span class="pun">.</span><span class="pln">ticksUntilNextEvent</span><span class="pun">();
+        </span><span class="kwd">auto </span><span class="pln">wr </span><span class="pun">= </span><span class="pln">w<wbr/></span><span class="pun">.</span><span class="pln">advance</span><span class="pun">(</span><span class="pln">ticks</span><span class="pun">);
+        </span><span class="kwd">foreach</span><span class="pun">(</span><span class="pln">t</span><span class="pun">; </span><span class="pln">wr<wbr/></span><span class="pun">.</span><span class="pln">timers</span><span class="pun">)
+        {
+            </span><span class="pln">process_timer</span><span class="pun">(</span><span class="pln">t</span><span class="pun">);
+        }
+    }
+    </span><span class="com">// some random processing time
+    </span><span class="typ">Thread<wbr/></span><span class="pun">.</span><span class="pln">sleep</span><span class="pun">(</span><span class="pln">uniform</span><span class="pun">(</span><span class="lit">0</span><span class="pun">, </span><span class="lit">5</span><span class="pun">, </span><span class="pln">rnd</span><span class="pun">)<wbr/>.</span><span class="pln">msecs</span><span class="pun">);
+}
+</span></code></pre>
+</section>
+
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>
