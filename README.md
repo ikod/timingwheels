@@ -92,7 +92,6 @@ Here is complete example with comments
     auto periodic_timer = new Timer("periodic");
     auto some_timer = new Timer("some");
 
-    w.init();
     // schedule periodic timer for 50.msecs
     w.schedule(periodic_timer, durationToTicks(50.msecs));
     // schedule other timer
