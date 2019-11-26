@@ -250,7 +250,7 @@ struct TimingWheels(T)
         int             freeListLen;
         HashMap!(TimerIdType, ListElement!T*)
                         ptrs;
-        long            advancedAt;
+        long            startedAt;
     }
     invariant
     {
@@ -379,9 +379,9 @@ struct TimingWheels(T)
         {
             throw new ScheduleTimerError("Timer already scheduled");
         }
-        if (advancedAt == 0)
+        if (startedAt == 0)
         {
-            advancedAt = Clock.currStdTime;
+            startedAt = Clock.currStdTime;
         }
         auto level_index = t2l(ticks);
         auto level = &levels[level_index];
@@ -453,10 +453,13 @@ struct TimingWheels(T)
     ///Returns: msecs until next event. Can be zero or negative in case you have already expired events.
     ///
     Duration timeUntilNextEvent(const Duration tick)
-    in(advancedAt>0)
     {
+        if (startedAt == 0)
+        {
+            return Duration.max;
+        }
         immutable n = ticksUntilNextEvent();
-        immutable target = advancedAt + n * tick.split!"hnsecs".hnsecs;
+        immutable target = startedAt + n * tick.split!"hnsecs".hnsecs;
         auto delta =  (target - Clock.currStdTime).hnsecs;
         return delta;
     }
@@ -491,7 +494,7 @@ struct TimingWheels(T)
 
         scope(exit)
         {
-            advancedAt = Clock.currStdTime;
+            startedAt = Clock.currStdTime;
         }
 
         while(ticks)
