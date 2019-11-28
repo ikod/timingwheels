@@ -33,7 +33,7 @@ This library require from Timer class to implement method `id()` which must retu
 `ticksUntilNextEvent()` return number of ticks without timers.
 
 #### timeUntilNextEvent ####
-`timeUnitNextEvent(Tick)` using provided tick duration return real time to next timer.
+`timeUnitNextEvent(Tick)` return real time to next timer using provided tick duration.
 
 Here is complete example with comments
 
