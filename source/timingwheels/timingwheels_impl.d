@@ -95,9 +95,22 @@ debug(timingwheels) @safe @nogc nothrow
     package
     void safe_tracef(A...)(string f, scope A args, string file = __FILE__, int line = __LINE__) @safe @nogc nothrow
     {
+        bool osx,ldc;
+        version(OSX)
+        {
+            osx = true;
+        }
+        version(LDC)
+        {
+            ldc = true;
+        }
         debug (timingwheels) try
         {
-            () @trusted @nogc {tracef("%s:%d " ~ f, file, line, args);}();
+            // this can fail on pair ldc2/osx, see https://github.com/ldc-developers/ldc/issues/3240
+            if (!osx || !ldc)
+            {
+                () @trusted @nogc {tracef("%s:%d " ~ f, file, line, args);}();
+            }
         }
         catch(Exception e)
         {
@@ -345,6 +358,7 @@ struct TimingWheels(T)
         {
             // this can be safely disposed as we do not leak ListElements outide this module
             () @trusted {
+                GC.removeRange(le);
                 dispose(allocator, le);
             }();
         }
