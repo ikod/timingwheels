@@ -35,6 +35,9 @@ $('#symbolSearchPane').show();</script>
 		</nav>
 		<div id="main-contents">
 			<h1>Function TimingWheels.timeUntilNextEvent</h1><p>Time until next scheduled timer event.
+You provide tick size and current real world time.
+This function find ticks until next event and use time of the start and
+total steps executed to calculate time delta from <b>realNow</b> to next event.
 </p>
 			<div class="prototype">
 				<code class="lang-d">
@@ -42,7 +45,9 @@ $('#symbolSearchPane').show();</script>
 			<span class="typ">Duration</span> <span class="pln">timeUntilNextEvent</span>
 			<span class="pun">(</span>
 			<br/>
-			&nbsp;&nbsp;<span class="kwd">const </span><span class="typ">Duration</span> <span class="pln">tick</span>
+			&nbsp;&nbsp;<span class="kwd">const </span><span class="typ">Duration</span> <span class="pln">tick</span><span class="pun">,</span>
+			<br/>
+			&nbsp;&nbsp;<span class="typ">ulong</span> <span class="pln">realNow</span>
 			<br/>
 			<span class="pun">)</span><span class="pun">;</span>
 					</div>
@@ -52,10 +57,11 @@ $('#symbolSearchPane').show();</script>
 			<section><h2>Parameters</h2>
 <table><col class="caption"><tr><th>Name</th><th>Description</th></tr>
 <tr><td id="tick">tick</td><td> your accepted tick duration.</td></tr>
+<tr><td id="realNow">realNow</td><td> real world now, result of Clock.currStdTime</td></tr>
 </table>
 </section>
 <section><h2>Returns</h2>
-<p>msecs until next event. Can be zero or negative in case you have already expired events.
+<p>time until next event. Can be zero or negative in case you have already expired events.
 </p>
 </section>
 

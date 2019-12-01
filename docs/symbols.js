@@ -10,7 +10,8 @@ var symbols = [
 {name: 'timingwheels.timingwheels_impl.TimingWheels', kind: "structdeclaration", path: './timingwheels/timingwheels_impl/TimingWheels.html', attributes: []},
 {name: 'timingwheels.timingwheels_impl.TimingWheels.advance', kind: "functiondeclaration", path: './timingwheels/timingwheels_impl/TimingWheels.advance.html', attributes: ["auto"]},
 {name: 'timingwheels.timingwheels_impl.TimingWheels.cancel', kind: "functiondeclaration", path: './timingwheels/timingwheels_impl/TimingWheels.cancel.html', attributes: []},
+{name: 'timingwheels.timingwheels_impl.TimingWheels.currStdTime', kind: "functiondeclaration", path: './timingwheels/timingwheels_impl/TimingWheels.currStdTime.html', attributes: ["auto"]},
 {name: 'timingwheels.timingwheels_impl.TimingWheels.schedule', kind: "functiondeclaration", path: './timingwheels/timingwheels_impl/TimingWheels.schedule.html', attributes: []},
-{name: 'timingwheels.timingwheels_impl.TimingWheels.ticksUntilNextEvent', kind: "functiondeclaration", path: './timingwheels/timingwheels_impl/TimingWheels.ticksUntilNextEvent.html', attributes: []},
+{name: 'timingwheels.timingwheels_impl.TimingWheels.ticksToCatchUp', kind: "functiondeclaration", path: './timingwheels/timingwheels_impl/TimingWheels.ticksToCatchUp.html', attributes: []},
 {name: 'timingwheels.timingwheels_impl.TimingWheels.timeUntilNextEvent', kind: "functiondeclaration", path: './timingwheels/timingwheels_impl/TimingWheels.timeUntilNextEvent.html', attributes: []},
 ];

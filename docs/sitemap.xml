@@ -11,7 +11,8 @@
 <url><loc>http://127.0.0.1/timingwheels/timingwheels_impl/TimingWheels.html</loc></url>
 <url><loc>http://127.0.0.1/timingwheels/timingwheels_impl/TimingWheels.advance.html</loc></url>
 <url><loc>http://127.0.0.1/timingwheels/timingwheels_impl/TimingWheels.cancel.html</loc></url>
+<url><loc>http://127.0.0.1/timingwheels/timingwheels_impl/TimingWheels.currStdTime.html</loc></url>
 <url><loc>http://127.0.0.1/timingwheels/timingwheels_impl/TimingWheels.schedule.html</loc></url>
-<url><loc>http://127.0.0.1/timingwheels/timingwheels_impl/TimingWheels.ticksUntilNextEvent.html</loc></url>
+<url><loc>http://127.0.0.1/timingwheels/timingwheels_impl/TimingWheels.ticksToCatchUp.html</loc></url>
 <url><loc>http://127.0.0.1/timingwheels/timingwheels_impl/TimingWheels.timeUntilNextEvent.html</loc></url>
 </urlset>

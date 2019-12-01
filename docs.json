@@ -121,7 +121,7 @@
 						"name": "T"
 					}
 				],
-				"line": 212,
+				"line": 227,
 				"kind": "template",
 				"char": 1,
 				"members": [
@@ -130,13 +130,32 @@
 						"char": 1,
 						"members": [
 							{
+								"storageClass": [
+									"auto"
+								],
+								"parameters": [
+									{
+										"type": "Duration",
+										"name": "tick"
+									}
+								],
+								"line": 385,
+								"kind": "function",
+								"char": 10,
+								"name": "currStdTime",
+								"type": "(Duration tick)",
+								"endchar": 5,
+								"endline": 388,
+								"comment": "\n Return internal view on current time - it is time at the call to $(B init)\n plus total number of steps multiplied by $(B tick) duration.\n Params:\n   tick = tick duration\n"
+							},
+							{
 								"parameters": [
 									{
 										"kind": "type",
 										"name": "T"
 									}
 								],
-								"line": 371,
+								"line": 401,
 								"kind": "template",
 								"char": 10,
 								"members": [
@@ -154,17 +173,17 @@
 												"name": "ticks"
 											}
 										],
-										"line": 371,
+										"line": 401,
 										"kind": "function",
 										"char": 10,
 										"name": "schedule",
 										"type": "void(T timer, const ulong ticks)",
 										"endchar": 5,
-										"endline": 398
+										"endline": 424
 									}
 								],
 								"name": "schedule",
-								"comment": "\nSchedule timer to future\nParams:\ntimer = timer to schedule;\nticks = ticks in the future to schedule timer. (0 < ticks < ulong.max);\nReturns:\nvoid\nThrows:\nScheduleTimerError\nwhen thicks == 0\nor when timer already scheduled\n\n"
+								"comment": "\nSchedule timer to $(B ticks) ticks forward from internal 'now'.\nParams:\ntimer = timer to schedule;\nticks = ticks in the future to schedule timer. (0 < ticks < ulong.max);\nReturns:\nvoid\nThrows:\nScheduleTimerError\nwhen thicks == 0\nor when timer already scheduled\n\n"
 							},
 							{
 								"parameters": [
@@ -173,7 +192,7 @@
 										"name": "T"
 									}
 								],
-								"line": 407,
+								"line": 433,
 								"kind": "template",
 								"char": 10,
 								"members": [
@@ -184,27 +203,37 @@
 												"name": "timer"
 											}
 										],
-										"line": 407,
+										"line": 433,
 										"kind": "function",
 										"char": 10,
 										"name": "cancel",
 										"type": "void(T timer)",
 										"endchar": 5,
-										"endline": 423
+										"endline": 449
 									}
 								],
 								"name": "cancel",
 								"comment": "Cancel timer\nParams:\ntimer = timer to cancel\nReturns:\nvoid\nThrows:\nCancelTimerError\nif timer not in wheel\n"
 							},
 							{
-								"line": 430,
+								"parameters": [
+									{
+										"type": "Duration",
+										"name": "tick"
+									},
+									{
+										"deco": "m",
+										"name": "realTime"
+									}
+								],
+								"line": 458,
 								"kind": "function",
 								"char": 9,
-								"name": "ticksUntilNextEvent",
-								"type": "int()",
+								"name": "ticksToCatchUp",
+								"type": "int(Duration tick, ulong realTime)",
 								"endchar": 5,
-								"endline": 449,
-								"comment": "\ncount \"empty\" ticks - slots without events.\nIf you have empty ticks it is safe to sleep - you will not miss anything, just wake up\nat the time when next timer have to be processed.\nReturns: number of empty ticks.\n\n"
+								"endline": 467,
+								"comment": "Number of ticks to rotate wheels until internal wheel 'now'\ncatch up with real world realTime.\nCalculation based on time when wheels were stared and total\nnumer of ticks pasded.\nParams:\ntick = your tick length (Duration)\nrealTime = current real world now (Clock.currStdTime)\nReturns: ticks to advance so that we catch up real world current time\n"
 							},
 							{
 								"parameters": [
@@ -214,16 +243,20 @@
 											"const"
 										],
 										"name": "tick"
+									},
+									{
+										"deco": "m",
+										"name": "realNow"
 									}
 								],
-								"line": 455,
+								"line": 477,
 								"kind": "function",
 								"char": 14,
 								"name": "timeUntilNextEvent",
-								"type": "Duration(const Duration tick)",
+								"type": "Duration(const Duration tick, ulong realNow)",
 								"endchar": 5,
-								"endline": 465,
-								"comment": "Time until next scheduled timer event.\nParams:\ntick = your accepted tick duration.\nReturns: msecs until next event. Can be zero or negative in case you have already expired events.\n\n"
+								"endline": 485,
+								"comment": "Time until next scheduled timer event.\nYou provide tick size and current real world time.\nThis function find ticks until next event and use time of the start and\ntotal steps executed to calculate time delta from $(B realNow) to next event.\nParams:\ntick = your accepted tick duration.\nrealNow = real world now, result of Clock.currStdTime\nReturns: time until next event. Can be zero or negative in case you have already expired events.\n\n"
 							},
 							{
 								"parameters": [
@@ -232,7 +265,7 @@
 										"name": "W"
 									}
 								],
-								"line": 473,
+								"line": 494,
 								"kind": "template",
 								"char": 10,
 								"members": [
@@ -246,25 +279,25 @@
 												"name": "ticks"
 											}
 										],
-										"line": 473,
+										"line": 494,
 										"kind": "function",
 										"char": 10,
 										"name": "advance",
 										"type": "(ulong ticks)",
 										"endchar": 5,
-										"endline": 525
+										"endline": 541
 									}
 								],
 								"name": "advance",
 								"comment": "\nAdnvance wheel and return all timers expired during wheel turn.\n\nParams:\nticks = how many ticks to advance. Must be in range 0 <= 256\nReturns: list of expired timers\n\n"
 							}
 						],
-						"line": 212,
+						"line": 227,
 						"name": "TimingWheels"
 					}
 				],
 				"name": "TimingWheels",
-				"comment": "\nThis structure implements scheme 6.2 thom the\nhttp://www.cs.columbia.edu/~nahum/w6998/papers/sosp87-timing-wheels.pdf\nIt supports several primitives:\n1. schedule timer in the future.\n2. cancel timer.\n3. time step (advance) - all timers expired at current time tick are extracted from wheels.\nEach operation take O(1) time.\n\nExample:\n$(DDOX_UNITTEST_HEADER __unittest_L679_C1)\n---\nimport std;\nglobalLogLevel = LogLevel.info;\nauto rnd = Random(142);\n\n/// track execution\nint  counter;\nSysTime last = Clock.currTime;\n\n/// this is our Timer\nclass Timer\n{\n    static ulong __id;\n    private ulong _id;\n    private string _name;\n    this(string name)\n    {\n        _id = __id++;\n        _name = name;\n    }\n    /// must provide id() method\n    ulong id()\n    {\n        return _id;\n    }\n}\n\nenum IOWakeUpInterval = 100; // to simulate random IO wakeups in interval 0 - 100.msecs\n\n// each tick span 5 msecs - this is our link with time in reality\nenum Tick = 5.msecs;\nTimingWheels!Timer w;\n\nauto durationToTicks(Duration d)\n{\n    return d/Tick;\n}\nvoid process_timer(Timer t)\n{\n    switch(t._name)\n    {\n        case \"periodic\":\n            writefln(\"@ %s - delta: %sms (should be 50ms)\", t._name, (Clock.currTime - last).split!\"msecs\".msecs);\n            last = Clock.currTime;\n            counter++;\n            w.schedule(t, durationToTicks(50.msecs)); // rearm\n            break;\n        default:\n            writefln(\"@ %s\", t._name);\n            break;\n    }\n}\n\n//\n// start one arbitrary timer and one periodic timer\n//\nauto some_timer = new Timer(\"some\");\nauto periodic_timer = new Timer(\"periodic\");\nw.schedule(some_timer, durationToTicks(32.msecs));\nw.schedule(periodic_timer, durationToTicks(50.msecs));\n\nwhile(counter < 10)\n{\n    auto randomIoInterval = uniform(0, IOWakeUpInterval, rnd).msecs;\n    auto nextTimerEvent = max(w.timeUntilNextEvent(Tick), 0.msecs);\n    // wait for what should happen earlier\n    auto time_to_sleep = min(randomIoInterval, nextTimerEvent);\n    writefln(\"* sleep until timer event or random I/O for %s\", time_to_sleep);\n    Thread.sleep(time_to_sleep);\n    // if we waked up early by the IO event then timeUntilNextEvent will be positive\n    // otherwise it will be <= 0 and we have something to process.\n    while(w.timeUntilNextEvent(Tick) <= 0.msecs)\n    {\n        auto ticks = w.ticksUntilNextEvent();\n        auto wr = w.advance(ticks);\n        foreach(t; wr.timers)\n        {\n            process_timer(t);\n        }\n    }\n    // some random processing time\n    Thread.sleep(uniform(0, 5, rnd).msecs);\n}\n\n---\n$(DDOX_UNITTEST_FOOTER __unittest_L679_C1)\n"
+				"comment": "\nThis structure implements scheme 6.2 thom the\n$(LINK http://www.cs.columbia.edu/~nahum/w6998/papers/sosp87-timing-wheels.pdf)\nand supports several primitives:\n$(UL\n$(LI schedule timer in the future.)\n$(LI cancel timer.)\n$(LI time step (advance) - all timers expired at current time tick are extracted from wheels.)\n)\nEach operation take O(1) time.\n\nExample:\n$(DDOX_UNITTEST_HEADER __unittest_L742_C1)\n---\nimport std;\nglobalLogLevel = LogLevel.info;\nauto rnd = Random(142);\n\n/// track execution\nint  counter;\nSysTime last;\n\n/// this is our Timer\nclass Timer\n{\n    static ulong __id;\n    private ulong _id;\n    private string _name;\n    this(string name)\n    {\n        _id = __id++;\n        _name = name;\n    }\n    /// must provide id() method\n    ulong id()\n    {\n        return _id;\n    }\n}\n\nenum IOWakeUpInterval = 100; // to simulate random IO wakeups in interval 0 - 100.msecs\n\n// each tick span 5 msecs - this is our link with time in reality\nauto Tick = getValue!Duration();\nTimingWheels!Timer w;\nw.init();\nauto durationToTicks(Duration d)\n{\n    // we have to adjust w.now and realtime 'now' before scheduling timer\n    auto real_now = Clock.currStdTime;\n    auto tw_now = w.currStdTime(Tick);\n    auto delay = (real_now - tw_now).hnsecs;\n    return (d + delay)/Tick;\n}\nvoid process_timer(Timer t)\n{\n    switch(t._name)\n    {\n        case \"periodic\":\n            if ( last.stdTime == 0)\n            {\n                // initialize tracking\n                last = Clock.currTime - 50.msecs;\n            }\n            auto delta = Clock.currTime - last;\n            shouldApproxEqual((1e0*delta.split!\"msecs\".msecs), 50e0,1e-1);\n            writefln(\"@ %s - delta: %sms (should be 50ms)\", t._name, (Clock.currTime - last).split!\"msecs\".msecs);\n            last = Clock.currTime;\n            counter++;\n            w.schedule(t, durationToTicks(50.msecs)); // rearm\n            break;\n        default:\n            writefln(\"@ %s\", t._name);\n            break;\n    }\n}\n// some random initial delay\nauto randomInitialDelay = uniform(0, 500, rnd).msecs;\nThread.sleep(randomInitialDelay);\n//\n// start one arbitrary timer and one periodic timer\n//\nauto some_timer = new Timer(\"some\");\nauto periodic_timer = new Timer(\"periodic\");\nw.schedule(some_timer, durationToTicks(32.msecs));\nw.schedule(periodic_timer, durationToTicks(50.msecs));\n\nwhile(counter < 10)\n{\n    auto realNow = Clock.currStdTime;\n    auto randomIoInterval = uniform(0, IOWakeUpInterval, rnd).msecs;\n    auto nextTimerEvent = max(w.timeUntilNextEvent(Tick, realNow), 0.msecs);\n    // wait for what should happen earlier\n    auto time_to_sleep = min(randomIoInterval, nextTimerEvent);\n    writefln(\"* sleep until timer event or random I/O for %s\", time_to_sleep);\n    Thread.sleep(time_to_sleep);\n    // if we waked up early by the IO event then timeUntilNextEvent will be positive\n    // otherwise it will be <= 0 and we have something to process.\n    realNow = Clock.currStdTime;\n    int ticks = w.ticksToCatchUp(Tick, realNow);\n    if (ticks  > 0)\n    {\n        auto wr = w.advance(ticks);\n        foreach(t; wr.timers)\n        {\n            process_timer(t);\n        }\n    }\n    // some random processing time\n    Thread.sleep(uniform(0, 5, rnd).msecs);\n}\n\n---\n$(DDOX_UNITTEST_FOOTER __unittest_L742_C1)\nExample:\n$(DDOX_UNITTEST_HEADER __unittest_L742_C1)\n---\nimport std;\nglobalLogLevel = LogLevel.info;\nauto rnd = Random(142);\n\n/// track execution\nint  counter;\nSysTime last;\n\n/// this is our Timer\nclass Timer\n{\n    static ulong __id;\n    private ulong _id;\n    private string _name;\n    this(string name)\n    {\n        _id = __id++;\n        _name = name;\n    }\n    /// must provide id() method\n    ulong id()\n    {\n        return _id;\n    }\n}\n\nenum IOWakeUpInterval = 100; // to simulate random IO wakeups in interval 0 - 100.msecs\n\n// each tick span 5 msecs - this is our link with time in reality\nauto Tick = getValue!Duration();\nTimingWheels!Timer w;\nw.init();\nauto durationToTicks(Duration d)\n{\n    // we have to adjust w.now and realtime 'now' before scheduling timer\n    auto real_now = Clock.currStdTime;\n    auto tw_now = w.currStdTime(Tick);\n    auto delay = (real_now - tw_now).hnsecs;\n    return (d + delay)/Tick;\n}\nvoid process_timer(Timer t)\n{\n    switch(t._name)\n    {\n        case \"periodic\":\n            if ( last.stdTime == 0)\n            {\n                // initialize tracking\n                last = Clock.currTime - 50.msecs;\n            }\n            auto delta = Clock.currTime - last;\n            shouldApproxEqual((1e0*delta.split!\"msecs\".msecs), 50e0,1e-1);\n            writefln(\"@ %s - delta: %sms (should be 50ms)\", t._name, (Clock.currTime - last).split!\"msecs\".msecs);\n            last = Clock.currTime;\n            counter++;\n            w.schedule(t, durationToTicks(50.msecs)); // rearm\n            break;\n        default:\n            writefln(\"@ %s\", t._name);\n            break;\n    }\n}\n// some random initial delay\nauto randomInitialDelay = uniform(0, 500, rnd).msecs;\nThread.sleep(randomInitialDelay);\n//\n// start one arbitrary timer and one periodic timer\n//\nauto some_timer = new Timer(\"some\");\nauto periodic_timer = new Timer(\"periodic\");\nw.schedule(some_timer, durationToTicks(32.msecs));\nw.schedule(periodic_timer, durationToTicks(50.msecs));\n\nwhile(counter < 10)\n{\n    auto realNow = Clock.currStdTime;\n    auto randomIoInterval = uniform(0, IOWakeUpInterval, rnd).msecs;\n    auto nextTimerEvent = max(w.timeUntilNextEvent(Tick, realNow), 0.msecs);\n    // wait for what should happen earlier\n    auto time_to_sleep = min(randomIoInterval, nextTimerEvent);\n    writefln(\"* sleep until timer event or random I/O for %s\", time_to_sleep);\n    Thread.sleep(time_to_sleep);\n    // if we waked up early by the IO event then timeUntilNextEvent will be positive\n    // otherwise it will be <= 0 and we have something to process.\n    realNow = Clock.currStdTime;\n    int ticks = w.ticksToCatchUp(Tick, realNow);\n    if (ticks  > 0)\n    {\n        auto wr = w.advance(ticks);\n        foreach(t; wr.timers)\n        {\n            process_timer(t);\n        }\n    }\n    // some random processing time\n    Thread.sleep(uniform(0, 5, rnd).msecs);\n}\n\n---\n$(DDOX_UNITTEST_FOOTER __unittest_L742_C1)\n"
 			}
 		],
 		"comment": "\n",

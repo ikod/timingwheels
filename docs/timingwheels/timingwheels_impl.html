@@ -86,6 +86,13 @@ $('#symbolSearchPane').show();</script>
 							</code>
 						</td>
 						<td>This structure implements scheme 6.2 thom the
+<a href="http://www.cs.columbia.edu/~nahum/w6998/papers/sosp87-timing-wheels.pdf">http://www.cs.columbia.edu/~nahum/w6998/papers/sosp87-timing-wheels.pdf</a>
+and supports several primitives:
+<ul><li>schedule timer in the future.</li>
+<li>cancel timer.</li>
+<li>time step (advance) - all timers expired at current time tick are extracted from wheels.</li>
+</ul>
+Each operation take O(1) time.
 </td>
 					</tr>
 				</table>
