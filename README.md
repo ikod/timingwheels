@@ -19,6 +19,7 @@ This library require from Timer class to implement method `id()` which must retu
 
 
 ### API ###
+See https://ikod.github.io/timingwheels/ for actual docs
 
 #### Schedule timer ####
 `schedule(timer, t);` - schedule timer for execution `t` ticks in the future. t must be > 0.
@@ -29,11 +30,8 @@ This library require from Timer class to implement method `id()` which must retu
 #### Advance ####
 `advance(t)` - advance wheels on `t` ticks. Advance on single tick will return all timers scheduled for the next tick (if any). `t` must be in interval (0, 256].
 
-#### ticksUntilNextEvent ####
-`ticksUntilNextEvent()` return number of ticks without timers.
-
 #### timeUntilNextEvent ####
-`timeUnitNextEvent(Tick)` return real time to next timer using provided tick duration.
+`timeUnitNextEvent(Tick, now)` return real time to next timer using provided tick duration.
 
 Here is complete example with comments
 
