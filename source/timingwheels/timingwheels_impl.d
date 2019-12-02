@@ -738,6 +738,7 @@ unittest
 ///
 @("example")
 @Serial
+@Tags("noauto")
 @Values(1.msecs,2.msecs,3.msecs,4.msecs,5.msecs,6.msecs,7.msecs)
 unittest
 {
