@@ -805,7 +805,7 @@ unittest
                 break;
         }
     }
-    // some random initial delay
+    // emulate some random initial delay
     auto randomInitialDelay = uniform(0, 500, rnd).msecs;
     Thread.sleep(randomInitialDelay);
     //
@@ -825,11 +825,9 @@ unittest
         auto time_to_sleep = min(randomIoInterval, nextTimerEvent);
         writefln("* sleep until timer event or random I/O for %s", time_to_sleep);
         Thread.sleep(time_to_sleep);
-        // if we waked up early by the IO event then timeUntilNextEvent will be positive
-        // otherwise it will be <= 0 and we have something to process.
-        realNow = Clock.currStdTime;
-        int ticks = w.ticksToCatchUp(Tick, realNow);
-        if (ticks  > 0)
+        // make steps if required
+        int ticks = w.ticksToCatchUp(Tick, Clock.currStdTime);
+        if (ticks > 0)
         {
             auto wr = w.advance(ticks);
             foreach(t; wr.timers)
@@ -837,7 +835,7 @@ unittest
                 process_timer(t);
             }
         }
-        // some random processing time
+        // emulate some random processing time
         Thread.sleep(uniform(0, 5, rnd).msecs);
     }
 }

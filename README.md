@@ -38,9 +38,15 @@ This library require from Timer class to implement method `id()` which must retu
 Here is complete example with comments
 
 ```d
-{
     import std;
     globalLogLevel = LogLevel.info;
+    auto rnd = Random(142);
+
+    /// track execution
+    int  counter;
+    SysTime last;
+
+    /// this is our Timer
     class Timer
     {
         static ulong __id;
@@ -51,78 +57,81 @@ Here is complete example with comments
             _id = __id++;
             _name = name;
         }
+        /// must provide id() method
         ulong id()
         {
             return _id;
         }
     }
-    //
-    // start some arbitrary timer and timer which rearm itself for every 50ms
-    //
-    TimingWheels!Timer w;
-    // each tick span 5 msecs
-    enum Tick = 5.msecs;
-    enum IOWakeUpInterval = 100; // msecs
-    int  counter;
-    auto rnd = Random(142);
-    SysTime last = Clock.currTime;
 
-    // convert duration to ticks
+    enum IOWakeUpInterval = 100; // to simulate random IO wakeups in interval 0 - 100.msecs
+
+    // each tick span some time interval - this is our link with time in reality
+    auto Tick = 5.msecs;
+
+    TimingWheels!Timer w;
+    w.init();
     auto durationToTicks(Duration d)
     {
-        return d/Tick;
+        // we have to adjust w.now and realtime 'now' before scheduling timer
+        auto real_now = Clock.currStdTime;
+        auto tw_now = w.currStdTime(Tick);
+        auto delay = (real_now - tw_now).hnsecs;
+        return (d + delay)/Tick;
     }
-    // timer event processing
     void process_timer(Timer t)
     {
         switch(t._name)
         {
             case "periodic":
+                if ( last.stdTime == 0)
+                {
+                    // initialize tracking
+                    last = Clock.currTime - 50.msecs;
+                }
+                auto delta = Clock.currTime - last;
+                shouldApproxEqual((1e0*delta.split!"msecs".msecs), 50e0,1e-1);
                 writefln("@ %s - delta: %sms (should be 50ms)", t._name, (Clock.currTime - last).split!"msecs".msecs);
                 last = Clock.currTime;
                 counter++;
-                w.schedule(t, durationToTicks(50.msecs));
+                w.schedule(t, durationToTicks(50.msecs)); // rearm
                 break;
             default:
                 writefln("@ %s", t._name);
                 break;
         }
     }
-    // create timers
-    auto periodic_timer = new Timer("periodic");
+    // emulate some random initial delay
+    auto randomInitialDelay = uniform(0, 500, rnd).msecs;
+    Thread.sleep(randomInitialDelay);
+    //
+    // start one arbitrary timer and one periodic timer
+    //
     auto some_timer = new Timer("some");
-
-    // schedule periodic timer for 50.msecs
-    w.schedule(periodic_timer, durationToTicks(50.msecs));
-    // schedule other timer
+    auto periodic_timer = new Timer("periodic");
     w.schedule(some_timer, durationToTicks(32.msecs));
+    w.schedule(periodic_timer, durationToTicks(50.msecs));
 
-    while(counter < 10) // done after 10 iterations
+    while(counter < 10)
     {
-        // randomIoInterval to emulate IO event which can arrive at any time
-        auto randomIoInterval = uniform(0, IOWakeUpInterval, rnd);
-        // calculate time to next timer event
-        auto nextTimerEvent = max(w.timeUntilNextEvent(Tick), 0.msecs);
+        auto realNow = Clock.currStdTime;
+        auto randomIoInterval = uniform(0, IOWakeUpInterval, rnd).msecs;
+        auto nextTimerEvent = max(w.timeUntilNextEvent(Tick, realNow), 0.msecs);
         // wait for what should happen earlier
-        auto time_to_sleep = min(randomIoInterval.msecs, nextTimerEvent);
+        auto time_to_sleep = min(randomIoInterval, nextTimerEvent);
         writefln("* sleep until timer event or random I/O for %s", time_to_sleep);
-
         Thread.sleep(time_to_sleep);
-
-        // if we have some timers to execute then timeUntilNextEvent
-        // will be less or equal to zero.
-        while(w.timeUntilNextEvent(Tick) <= 0.msecs)
+        // make steps if required
+        int ticks = w.ticksToCatchUp(Tick, Clock.currStdTime);
+        if (ticks > 0)
         {
-            // how much we have to advance?
-            auto ticks = w.ticksUntilNextEvent();
-            // receive all expired timers
             auto wr = w.advance(ticks);
             foreach(t; wr.timers)
             {
                 process_timer(t);
             }
         }
-        // some random processing time
+        // emulate some random processing time
         Thread.sleep(uniform(0, 5, rnd).msecs);
     }
 }
