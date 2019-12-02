@@ -658,6 +658,7 @@ unittest
     assert(c==1);
 }
 @("rt")
+@Tags("noauto")
 unittest
 {
     globalLogLevel = LogLevel.info;
