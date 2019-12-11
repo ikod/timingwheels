@@ -411,16 +411,18 @@ struct TimingWheels(T)
         }
         auto level_index = t2l(ticks);
         auto level = &levels[level_index];
+        debug(timingwheels) safe_tracef("use level %d, level now: %d", level_index, level.now);
         auto slot_index  = (level.now + t2s(ticks, level_index)) & MASK;
         auto slot        = &levels[level_index].slots[slot_index];
+        debug(timingwheels) safe_tracef("use slot %d", slot_index);
         auto le = getOrCreate();
         le.timer = timer;
         le.position = ((level_index << 8 ) | slot_index) & 0xffff;
         le.scheduled_at = levels[0].now + ticks;
         dl_insertFront(le, &slot.head);
         ptrs[timer_id] = le;
-        debug(timingwheels) safe_tracef("scheduled timer id: %s, ticks: %s, now: %d, level: %s, slot %s",
-            timer_id, ticks, levels[0].now, level_index, slot_index);
+        debug(timingwheels) safe_tracef("scheduled timer id: %s, ticks: %s, now: %d, scheduled at: %s to level: %s, slot %s",
+            timer_id, ticks, levels[0].now, le.scheduled_at, level_index, slot_index);
     }
     /// Cancel timer
     ///Params: 
@@ -478,7 +480,7 @@ struct TimingWheels(T)
     {
         assert(startedAt>0, "Forgot to call init()?");
         immutable n = ticksUntilNextEvent();
-        immutable target = startedAt + (levels[0].now + n) * tick.split!"hnsecs".hnsecs;
+        immutable target = startedAt + (levels[0].now + n + 1) * tick.split!"hnsecs".hnsecs;
         auto delta =  (target - realNow).hnsecs;
         debug(timingwheels) safe_tracef("ticksUntilNextEvent=%s, tick=%s, startedAt=%s", n, tick, SysTime(startedAt));
         return delta;
@@ -530,7 +532,7 @@ struct TimingWheels(T)
                 auto timer = le.timer;
                 auto timer_id = timer.id();
                 assert(!result._map.contains(timer_id), "Something wrong: we try to return same timer twice");
-                debug(timingwheels) safe_tracef("return timer id: %s, scheduled at %s", timer_id, le.scheduled_at);
+                debug(timingwheels) safe_tracef("return timer: %s, scheduled at %s", timer, le.scheduled_at);
                 result._map[timer_id] = timer;
                 dl_unlink(le, &slot.head);
                 returnToFreeList(le);
@@ -541,10 +543,10 @@ struct TimingWheels(T)
     }
 
     //
-    // count "empty" ticks - slots without events.
+    // ticks until next event on level 0 or until next wheel rotation
     // If you have empty ticks it is safe to sleep - you will not miss anything, just wake up
     // at the time when next timer have to be processed.
-    //Returns: number of empty ticks.
+    //Returns: number of safe "sleep" ticks.
     //
     private int ticksUntilNextEvent()
     out(r; r<=256)
@@ -564,7 +566,8 @@ struct TimingWheels(T)
             slot = (slot + 1) & MASK;
         }
         while(slot != now);
-        return result;
+
+        return min(result, 256-now);
     }
 
     private void advance_level(int level_index)
@@ -589,8 +592,8 @@ struct TimingWheels(T)
             immutable delta = listElement.scheduled_at - now0;
             immutable lower_level_index = t2l(delta);
             immutable lower_level_slot_index  = t2s(delta, lower_level_index);
-            debug(timingwheels) safe_tracef("move timer id: %s to level %s, slot: %s",
-                listElement.timer.id(), lower_level_index, lower_level_slot_index, delta);
+            debug(timingwheels) safe_tracef("move timer id: %s, scheduledAt; %d to level %s, slot: %s (delta=%s)",
+                listElement.timer.id(), listElement.scheduled_at, lower_level_index, lower_level_slot_index, delta);
             listElement.position = ((lower_level_index<<8) | lower_level_slot_index) & 0xffff;
             dl_relink(listElement, &slot.head, &levels[lower_level_index].slots[lower_level_slot_index].head);
         }
@@ -602,8 +605,10 @@ version(twtesting):
 @("TimingWheels")
 unittest
 {
+    import std.stdio;
     globalLogLevel = LogLevel.info;
     TimingWheels!Timer w;
+    w.init();
     assert(w.t2l(1) == 0);
     assert(w.t2s(1, 0) == 1);
     immutable t = 0x00_00_00_11_00_00_00_77;
@@ -640,6 +645,7 @@ unittest
         w.advance(1);
     }();
     w = TimingWheels!Timer();
+    w.init();
     w.schedule(timer, 1);
     auto r = w.advance(1);
     assert(r.timers.count == 1);
@@ -680,6 +686,7 @@ unittest
 {
     globalLogLevel = LogLevel.info;
     TimingWheels!Timer w;
+    w.init();
     Timer timer0 = new Timer();
     Timer timer1 = new Timer();
     w.schedule(timer0, 256);
@@ -697,6 +704,7 @@ unittest
 {
     globalLogLevel = LogLevel.info;
     TimingWheels!Timer w;
+    w.init();
     auto s = w.ticksUntilNextEvent;
     assert(s==256);
     auto r = w.advance(s);
@@ -708,7 +716,9 @@ unittest
     r = w.advance(s);
     assert(r.timers.count == 1);
 }
+
 @("load")
+@Serial
 unittest
 {
     import std.array:array;
@@ -716,6 +726,7 @@ unittest
     enum TIMERS = 100_000;
     Timer._current_id = 1;
     auto w = TimingWheels!Timer();
+    w.init();
     for(int i=1;i<=TIMERS;i++)
     {
         auto t = new Timer();
@@ -738,14 +749,15 @@ unittest
 ///
 ///
 @("example")
-@Serial
 @Tags("noauto")
-@Values(1.msecs,2.msecs,3.msecs,4.msecs,5.msecs,6.msecs,7.msecs)
+@Values(1.msecs,2.msecs,3.msecs,4.msecs,5.msecs,6.msecs,7.msecs,8.msecs, 9.msecs,10.msecs)
+@Serial
 unittest
 {
     import std;
     globalLogLevel = LogLevel.info;
     auto rnd = Random(142);
+    auto Tick = getValue!Duration();
 
     /// track execution
     int  counter;
@@ -772,7 +784,6 @@ unittest
     enum IOWakeUpInterval = 100; // to simulate random IO wakeups in interval 0 - 100.msecs
 
     // each tick span 5 msecs - this is our link with time in reality
-    auto Tick = getValue!Duration();
     TimingWheels!Timer w;
     w.init();
     auto durationToTicks(Duration d)
@@ -794,7 +805,7 @@ unittest
                     last = Clock.currTime - 50.msecs;
                 }
                 auto delta = Clock.currTime - last;
-                shouldApproxEqual((1e0*delta.split!"msecs".msecs), 50e0,1e-1);
+                assert(delta - 50.msecs <= max(Tick + Tick/20, 5.msecs), "delta-50.msecs=%s".format(delta-50.msecs));
                 writefln("@ %s - delta: %sms (should be 50ms)", t._name, (Clock.currTime - last).split!"msecs".msecs);
                 last = Clock.currTime;
                 counter++;
