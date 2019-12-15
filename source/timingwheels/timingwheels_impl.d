@@ -49,7 +49,7 @@ version(twtesting)
         }
         override string toString()
         {
-            return "%d:%s".format(_id);
+            return "%d".format(_id);
         }
     }
 }
@@ -409,12 +409,22 @@ struct TimingWheels(T)
         {
             throw new ScheduleTimerError("Timer already scheduled");
         }
-        auto level_index = t2l(ticks);
+        long level_index = 0;
+        long t = ticks;
+        long s = 1;     // width of the slot in ticks on level
+        long shift = 0;
+        while(t > s<<8) // while t > slots on level
+        {
+            t -= (SLOTS - (levels[level_index].now & MASK)) * s;
+            level_index++;
+            s = s << 8;
+            shift += 8;
+        }
         auto level = &levels[level_index];
-        debug(timingwheels) safe_tracef("use level %d, level now: %d", level_index, level.now);
-        auto slot_index  = (level.now + t2s(ticks, level_index)) & MASK;
-        auto slot        = &levels[level_index].slots[slot_index];
-        debug(timingwheels) safe_tracef("use slot %d", slot_index);
+        auto mask = s - 1;
+        auto slot_index = (level.now + (t>>shift) + ((t&mask)>0?1:0)) & MASK;
+        auto slot       = &levels[level_index].slots[slot_index];
+        debug(timingwheels) safe_tracef("use level/slot %d/%d, level now: %d", level_index, slot_index, level.now);
         auto le = getOrCreate();
         le.timer = timer;
         le.position = ((level_index << 8 ) | slot_index) & 0xffff;
@@ -522,10 +532,6 @@ struct TimingWheels(T)
             immutable slot_index    = now & MASK;
             auto      slot = &level.slots[slot_index];
             debug(timingwheels) safe_tracef("level 0, now=%s", now);
-            if (slot_index == 0)
-            {
-                advance_level(1);
-            }
             while(slot.head)
             {
                 auto le = slot.head;
@@ -537,6 +543,10 @@ struct TimingWheels(T)
                 dl_unlink(le, &slot.head);
                 returnToFreeList(le);
                 ptrs.remove(timer.id());
+            }
+            if (slot_index == 0)
+            {
+                advance_level(1);
             }
         }
         return result;
@@ -579,10 +589,6 @@ struct TimingWheels(T)
         immutable now    = ++level.now;
         immutable slot_index = now & MASK;
         debug(timingwheels) safe_tracef("level %s, now=%s", level_index, now);
-        if (slot_index == 0 && level_index < LEVEL_MAX)
-        {
-            advance_level(level_index+1);
-        }
         auto slot = &level.slots[slot_index];
         debug(timingwheels) safe_tracef("haldle l%s:s%s timers", level_index, slot_index);
         while(slot.head)
@@ -590,12 +596,27 @@ struct TimingWheels(T)
             auto listElement = slot.head;
 
             immutable delta = listElement.scheduled_at - now0;
-            immutable lower_level_index = t2l(delta);
-            immutable lower_level_slot_index  = t2s(delta, lower_level_index);
+            long lower_level_index = 0;
+            long t = delta;
+            long s = 1;     // width of the slot in ticks on level
+            long shift = 0;
+            while(t > s<<8) // while t > slots on level
+            {
+                t -= (SLOTS - (levels[lower_level_index].now & MASK)) * s;
+                lower_level_index++;
+                s = s << 8;
+                shift += 8;
+            }
+            auto mask = s - 1;
+            auto lower_level_slot_index = (levels[lower_level_index].now + (t>>shift) + ((t&mask)>0?1:0)) & MASK;
             debug(timingwheels) safe_tracef("move timer id: %s, scheduledAt; %d to level %s, slot: %s (delta=%s)",
                 listElement.timer.id(), listElement.scheduled_at, lower_level_index, lower_level_slot_index, delta);
             listElement.position = ((lower_level_index<<8) | lower_level_slot_index) & 0xffff;
             dl_relink(listElement, &slot.head, &levels[lower_level_index].slots[lower_level_slot_index].head);
+        }
+        if (slot_index == 0 && level_index < LEVEL_MAX)
+        {
+            advance_level(level_index+1);
         }
     }
 }
@@ -738,12 +759,45 @@ unittest
         auto r = w.advance(1);
         auto timers = r.timers;
         auto t = timers.array()[0];
-        assert(t.id == i);
+        assert(t.id == i, "expected t.id=%s, got %s".format(t.id, i));
         assert(timers.count == 1);
         counter++;
     }
     assert(counter == TIMERS, "expected 100 timers, got %d".format(counter));
+
+    for(int i=1;i<=TIMERS;i++)
+    {
+        auto t = new Timer();
+        w.schedule(t, i);
+    }
+    counter = 0;
+    for(int i=TIMERS+1;i<=2*TIMERS;i++)
+    {
+        auto r = w.advance(1);
+        auto timers = r.timers;
+        auto t = timers.array()[0];
+        assert(t.id == i, "expected t.id=%s, got %s".format(t.id, i));
+        assert(timers.count == 1);
+        counter++;
+    }
+    assert(counter == TIMERS, "expected 100 timers, got %d".format(counter));
+
 }
+// @("cornercase")
+// @Serial
+// unittest
+// {
+//     Timer._current_id = 1;
+//     auto w = TimingWheels!Timer();
+//     globalLogLevel = LogLevel.trace;
+//     w.advance(254);
+//     auto t = new Timer();
+//     w.schedule(t, 511);
+//     for(int i=0; i<511; i++)
+//     {
+//         w.advance(1);
+//     }
+// }
 
 ///
 ///
