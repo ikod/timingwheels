@@ -693,10 +693,11 @@ unittest
     TimingWheels!Timer w;
     Duration Tick = 5.msecs;
     w.init();
-    shouldApproxEqual(w.currStdTime(Tick)*1e0 - Clock.currStdTime*1e0, 0);
-    Thread.sleep(2*Tick);
     ulong now = Clock.currStdTime;
-    shouldApproxEqual((now - w.currStdTime(Tick))*1e0,  (2*Tick).split!"hnsecs".hnsecs*1e0, 3e-2);
+    assert(now - w.currStdTime(Tick) < 5*10_000);
+    Thread.sleep(2*Tick);
+    now = Clock.currStdTime;
+    assert((now - w.currStdTime(Tick))/10_000 - (2*Tick).split!"msecs".msecs < 10);
     auto toCatchUp = w.ticksToCatchUp(Tick, now);
     toCatchUp.shouldEqual(2);
     auto t = w.advance(toCatchUp);
