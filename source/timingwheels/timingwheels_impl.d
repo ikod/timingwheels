@@ -490,7 +490,7 @@ struct TimingWheels(T)
     {
         assert(startedAt>0, "Forgot to call init()?");
         immutable n = ticksUntilNextEvent();
-        immutable target = startedAt + (levels[0].now + n + 1) * tick.split!"hnsecs".hnsecs;
+        immutable target = startedAt + (levels[0].now + n) * tick.split!"hnsecs".hnsecs;
         auto delta =  (target - realNow).hnsecs;
         debug(timingwheels) safe_tracef("ticksUntilNextEvent=%s, tick=%s, startedAt=%s", n, tick, SysTime(startedAt));
         return delta;
@@ -522,6 +522,7 @@ struct TimingWheels(T)
         {
             throw new AdvanceWheelError("ticks must be > 0");
         }
+        debug(timingwheels) safe_tracef("advancing %d ticks", ticks);
         auto      result = AdvanceResult(ExpiredTimers());
         auto      level  = &levels[0];
 
