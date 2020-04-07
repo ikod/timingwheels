@@ -24,6 +24,9 @@
 			"dflags": ["-dip1008"],
 			"versions": ["twtesting"],
 			"debugVersions": ["timingwheels"]
+		},
+		{
+			"name": "release"
 		}
 	]
 }

@@ -1,0 +1,14 @@
+language: d
+
+arch:
+  - amd64
+  - x86
+d:
+  - dmd
+  - ldc
+os:
+  - linux
+  - osx
+
+script:
+    - dub test -- -s

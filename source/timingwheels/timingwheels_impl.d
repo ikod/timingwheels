@@ -564,9 +564,9 @@ struct TimingWheels(T)
     {
         int result = 1;
         auto level = &levels[0];
-        immutable now = levels[0].now & MASK;
+        immutable uint now = levels[0].now & MASK;
         auto slot = (now + 1) & MASK;
-        assert(level.slots[now].head == null);
+        //assert(level.slots[now].head == null);
         do
         {
             if (level.slots[slot].head != null)
