@@ -409,7 +409,7 @@ struct TimingWheels(T)
         {
             throw new ScheduleTimerError("Timer already scheduled");
         }
-        long level_index = 0;
+        size_t level_index = 0;
         long t = ticks;
         long s = 1;     // width of the slot in ticks on level
         long shift = 0;
@@ -422,7 +422,7 @@ struct TimingWheels(T)
         }
         auto level = &levels[level_index];
         auto mask = s - 1;
-        auto slot_index = (level.now + (t>>shift) + ((t&mask)>0?1:0)) & MASK;
+        size_t slot_index = (level.now + (t>>shift) + ((t&mask)>0?1:0)) & MASK;
         auto slot       = &levels[level_index].slots[slot_index];
         debug(timingwheels) safe_tracef("use level/slot %d/%d, level now: %d", level_index, slot_index, level.now);
         auto le = getOrCreate();
@@ -597,10 +597,10 @@ struct TimingWheels(T)
             auto listElement = slot.head;
 
             immutable delta = listElement.scheduled_at - now0;
-            long lower_level_index = 0;
+            size_t lower_level_index = 0;
             long t = delta;
-            long s = 1;     // width of the slot in ticks on level
-            long shift = 0;
+            size_t s = 1;     // width of the slot in ticks on level
+            size_t shift = 0;
             while(t > s<<8) // while t > slots on level
             {
                 t -= (SLOTS - (levels[lower_level_index].now & MASK)) * s;
@@ -609,7 +609,7 @@ struct TimingWheels(T)
                 shift += 8;
             }
             auto mask = s - 1;
-            auto lower_level_slot_index = (levels[lower_level_index].now + (t>>shift) + ((t&mask)>0?1:0)) & MASK;
+            size_t lower_level_slot_index = (levels[lower_level_index].now + (t>>shift) + ((t&mask)>0?1:0)) & MASK;
             debug(timingwheels) safe_tracef("move timer id: %s, scheduledAt; %d to level %s, slot: %s (delta=%s)",
                 listElement.timer.id(), listElement.scheduled_at, lower_level_index, lower_level_slot_index, delta);
             listElement.position = ((lower_level_index<<8) | lower_level_slot_index) & 0xffff;
@@ -814,7 +814,6 @@ unittest
     globalLogLevel = LogLevel.info;
     auto rnd = Random(142);
     auto Tick = getValue!Duration();
-
     /// track execution
     int  counter;
     SysTime last;
