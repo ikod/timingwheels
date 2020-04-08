@@ -8,4 +8,4 @@ os:
   - osx
 
 script:
- - dub test ~@noauto
+ - dub test -- ~@noauto
