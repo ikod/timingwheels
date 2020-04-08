@@ -7,17 +7,5 @@ os:
   - linux
   - osx
 
-env:
- - ARCH="x86_64"
-
-matrix:
-  exclude:
-    - os: osx
-      arch: x86
-  include:
-    - {os: linux, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
-    - {os: linux, env: ARCH="x86", addons: {apt: {packages: [[gcc-multilib]]}}}
-
 script:
- - dub test --arch "$ARCH" -- -s
-
+ - dub test ~@noauto
