@@ -512,6 +512,10 @@ struct TimingWheels(T)
             {
                 return _map.byValue;
             }
+            auto length()
+            {
+                return _map.length();
+            }
         }
         alias AdvanceResult = automem.RefCounted!(ExpiredTimers, Mallocator);
         if (ticks > l2t(0))
@@ -532,7 +536,7 @@ struct TimingWheels(T)
             immutable now           = ++level.now;
             immutable slot_index    = now & MASK;
             auto      slot = &level.slots[slot_index];
-            debug(timingwheels) safe_tracef("level 0, now=%s", now);
+            //debug(timingwheels) safe_tracef("level 0, now=%s", now);
             while(slot.head)
             {
                 auto le = slot.head;
