@@ -516,6 +516,14 @@ struct TimingWheels(T)
             {
                 return _map.length();
             }
+            bool contains(TimerIdType id)
+            {
+                return _map.contains(id);
+            }
+            void remove(TimerIdType id)
+            {
+                _map.remove(id);
+            }
         }
         alias AdvanceResult = automem.RefCounted!(ExpiredTimers, Mallocator);
         if (ticks > l2t(0))
@@ -556,7 +564,10 @@ struct TimingWheels(T)
         }
         return result;
     }
-
+    auto totalTimers() pure @safe @nogc
+    {
+        return ptrs.length();
+    }
     //
     // ticks until next event on level 0 or until next wheel rotation
     // If you have empty ticks it is safe to sleep - you will not miss anything, just wake up
