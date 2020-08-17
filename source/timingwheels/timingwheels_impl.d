@@ -568,6 +568,32 @@ struct TimingWheels(T)
     {
         return ptrs.length();
     }
+    auto allTimers() @safe @nogc
+    {
+        struct AllTimers
+        {
+            HashMap!(TimerIdType, T)    _map;
+            auto timers()
+            {
+                return _map.byValue;
+            }
+            auto length()
+            {
+                return _map.length();
+            }
+            bool contains(TimerIdType id)
+            {
+                return _map.contains(id);
+            }
+        }
+        alias AllResult = automem.RefCounted!(AllTimers, Mallocator);
+        AllTimers result;
+        foreach (p; ptrs.byPair)
+        {
+            result._map[p.key] = p.value.timer;
+        }
+        return result;
+    }
     //
     // ticks until next event on level 0 or until next wheel rotation
     // If you have empty ticks it is safe to sleep - you will not miss anything, just wake up
